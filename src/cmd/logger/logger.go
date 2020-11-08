@@ -53,8 +53,6 @@ func main() {
 
 	es, _ := elasticsearch.NewClient(cfg)
 
-	//somestring1, _ := regen.Generate("[a-z0-9]{32}")
-
 	var (
 		wg sync.WaitGroup
 	)
