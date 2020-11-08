@@ -13,12 +13,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/certifi/gocertifi"
+
 	elasticsearch "github.com/elastic/go-elasticsearch/v7"
 	esapi "github.com/elastic/go-elasticsearch/v7/esapi"
 	guuid "github.com/google/uuid"
 )
 
 func main() {
+
+	certPool, _ := gocertifi.CACerts()
+
 	appName, appNamePresent := os.LookupEnv("ES_CUSTOM_APP_NAME")
 
 	if !appNamePresent {
@@ -38,10 +43,17 @@ func main() {
 		"UNKNOWN",
 	}
 
+	var (
+		wg sync.WaitGroup
+	)
+
+	// Instantiate an Elastic Search configuration to be used to communicate
+	// with the Elastic Cloud.
+
 	cfg := elasticsearch.Config{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				RootCAs: certPool,
 			},
 		},
 		Addresses: []string{
@@ -53,24 +65,20 @@ func main() {
 
 	es, _ := elasticsearch.NewClient(cfg)
 
-	var (
-		wg sync.WaitGroup
-	)
-
 	for true {
 
 		// Generate some uid to be used inside the log message.
 		someUUID := guuid.New()
 
 		now := time.Now()
-		// this is very insecure for cryptographic purposes.
+		// This is very insecure when used for cryptographic purposes.
 		rand.Seed(now.Unix())
 		n := rand.Int() % len(logLevels)
 
 		// Generate log message
 		logMessage := fmt.Sprintf(`{"message" : "%v;%v->ExecutionID:%v@%v"}`, appName, logLevels[n], someUUID.String(), now.Unix())
 
-		// also print to sdtout what we are doing.
+		// Also print to sdtout what we are doing.
 		log.Println(logMessage)
 		wg.Add(1)
 
@@ -103,7 +111,7 @@ func main() {
 				}
 			}
 		}(logMessage)
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 5)
 	}
 	wg.Wait()
 
