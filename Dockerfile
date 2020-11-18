@@ -6,5 +6,5 @@ RUN go get -d -v
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o /go/bin/logger
 FROM scratch
 COPY --from=builder /go/bin/logger /go/bin/logger
-USER 9999
+USER 9999:9999
 ENTRYPOINT ["/go/bin/logger"]
